@@ -490,7 +490,7 @@
                     <h1>🔔 Subscription Expiration Alert System</h1>
                     <p style="color: #666; margin-top: 5px;">Monitor all your subscriptions and get alerts before they expire</p>
                 </div>
-                <button id="installBtn" style="display: none; padding: 12px 20px; background: #4CAF50; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: 600; font-size: 14px; white-space: nowrap;">📲 Install App</button>
+                <button id="installBtn" onclick="handleInstallClick()" style="padding: 12px 20px; background: #4CAF50; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: 600; font-size: 14px; white-space: nowrap;">📲 Add to Desktop</button>
             </div>
             
             <!-- PDF Upload Section -->
@@ -2672,51 +2672,29 @@
         }
 
         // App installation prompt handling
-        let deferredPrompt;
-        // Check if app is installable
-        
+        let deferredPrompt = null;
+
         window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('📲 Install prompt available!');
             e.preventDefault();
             deferredPrompt = e;
-            
-            // Show install button if it exists
-            const installBtn = document.getElementById('installBtn');
-            if (installBtn) {
-                installBtn.style.display = 'block';
-                console.log('✅ Install button shown');
-                installBtn.addEventListener('click', () => {
-                    console.log('🖱️ Install button clicked');
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        deferredPrompt.userChoice.then((choiceResult) => {
-                            if (choiceResult.outcome === 'accepted') {
-                                console.log('✅ User accepted install prompt');
-                            } else {
-                                console.log('❌ User dismissed install prompt');
-                            }
-                            deferredPrompt = null;
-                        });
-                    }
-                });
-            }
         });
 
         window.addEventListener('appinstalled', () => {
-            console.log('🎉 App installed successfully!');
             deferredPrompt = null;
+            const btn = document.getElementById('installBtn');
+            if (btn) { btn.textContent = '✅ Installed!'; btn.style.background = '#888'; }
         });
-        
-        // Log install readiness on load
-        window.addEventListener('load', () => {
-            console.log('=== APP INSTALL DIAGNOSTICS ===');
-            console.log('✓ HTTPS:', window.location.protocol === 'https:' ? 'YES ✅' : 'NO ❌ (needed for install)');
-            console.log('✓ Manifest found:', document.querySelector('link[rel="manifest"]') ? 'YES ✅' : 'NO ❌');
-            console.log('✓ Service Worker:', 'navigator' in window ? (('serviceWorker' in navigator) ? 'YES ✅' : 'NO ❌') : 'NO ❌');
-            console.log('✓ Browser:', /Chrome|Edge/i.test(navigator.userAgent) ? 'Chrome/Edge ✅' : 'Other (may not support install)');
-            console.log('✓ Install button visible:', document.getElementById('installBtn')?.style.display !== 'none' ? 'YES ✅' : 'NO (waiting for beforeinstallprompt event)');
-            console.log('===== END DIAGNOSTICS =====');
-        });
+
+        function handleInstallClick() {
+            if (deferredPrompt) {
+                // Native install prompt available — use it
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+            } else {
+                // Already installed or prompt unavailable — guide user
+                alert('To add to your desktop:\n\n1. Look for the install icon (⊕ or computer icon) in the Chrome address bar and click it\n\nOR\n\n2. Open chrome://apps in a new tab → right-click this app → "Create shortcuts" → check Desktop → Create');
+            }
+        }
     </script>
 </body>
 </html>
