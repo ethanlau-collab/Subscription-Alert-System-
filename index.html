@@ -2666,30 +2666,6 @@
             });
         }
 
-        // App installation prompt handling
-        let deferredPrompt = null;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-
-        window.addEventListener('appinstalled', () => {
-            deferredPrompt = null;
-            const btn = document.getElementById('installBtn');
-            if (btn) { btn.textContent = '✅ Installed!'; btn.style.background = '#888'; }
-        });
-
-        function handleInstallClick() {
-            if (deferredPrompt) {
-                // Native install prompt available — use it
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-            } else {
-                // Already installed or prompt unavailable — guide user
-                alert('To add to your desktop:\n\n1. Look for the install icon (⊕ or computer icon) in the Chrome address bar and click it\n\nOR\n\n2. Open chrome://apps in a new tab → right-click this app → "Create shortcuts" → check Desktop → Create');
-            }
-        }
     </script>
 </body>
 </html>
