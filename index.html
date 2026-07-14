@@ -1820,34 +1820,30 @@
             const newSub = {
                 id: Date.now(),
                 name,
-                startDate: startDate || '', // Allow empty
-                endDate: endDate || '', // Allow empty
-                cost, // Store as string
-                currency, // Save extracted or overridden currency
+                startDate: startDate || '',
+                endDate: endDate || '',
+                cost,
+                currency,
                 alertDays
             };
 
-            console.log('✅ NEW SUBSCRIPTION OBJECT:', newSub);
-            console.log('Cost in object:', newSub.cost);
-            
-            subscriptions.push(newSub);
-            saveToLocalStorage(); // Saves to IndexedDB (not localStorage!)
-            
-            // Check if there's a PDF to save
+            // Attach PDF directly to subscription so it persists automatically
             const pdfToSave = sessionStorage.getItem('currentPDFToSave');
-            if (pdfToSave && db) {
+            if (pdfToSave) {
                 try {
                     const pdfData = JSON.parse(pdfToSave);
-                    savePDFToIndexedDB(newSub.id, pdfData.name, pdfData.data).then(() => {
-                        console.log('✅ PDF saved to IndexedDB with subscription');
-                        sessionStorage.removeItem('currentPDFToSave');
-                    }).catch(err => {
-                        console.error('❌ Failed to save PDF:', err);
-                    });
+                    // Store just the base64 part (strip data URI prefix if present)
+                    newSub.pdfData = pdfData.data.includes(',') ? pdfData.data.split(',')[1] : pdfData.data;
+                    newSub.pdfName = pdfData.name;
+                    sessionStorage.removeItem('currentPDFToSave');
+                    console.log('✅ PDF attached to subscription:', pdfData.name);
                 } catch (e) {
-                    console.warn('⚠️ Could not parse PDF data:', e);
+                    console.warn('⚠️ Could not attach PDF:', e);
                 }
             }
+
+            subscriptions.push(newSub);
+            saveToLocalStorage();
             
             console.log('✅ Subscription saved to IndexedDB (UNLIMITED STORAGE)');
             console.log('Total subscriptions:', subscriptions.length);
