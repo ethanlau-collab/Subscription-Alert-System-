@@ -898,6 +898,7 @@
         let currentSort = 'latest';
         let searchTerm = '';
         let editingId = null;
+        let pendingPDF = null; // holds { name, data } until subscription is saved
 
         // ==================== IndexedDB for Large PDF Storage ====================
         const DB_NAME = 'SubscriptionAlertDB';
@@ -1249,14 +1250,10 @@
                         reader.readAsDataURL(new Blob([arrayBuffer], { type: 'application/pdf' }));
                     });
                     
-                    // Store a reference to the PDF (we'll link it when subscription is created)
-                    sessionStorage.setItem('currentPDFToSave', JSON.stringify({
-                        name: file.name,
-                        data: base64PDF,
-                        size: file.size
-                    }));
-                    
-                    console.log('💾 PDF stored in session for linking (size: ' + (file.size / 1024 / 1024).toFixed(2) + ' MB)');
+                    // Hold PDF in memory until subscription is saved (avoids sessionStorage 5MB limit)
+                    pendingPDF = { name: file.name, data: base64PDF };
+
+                    console.log('💾 PDF ready to attach (size: ' + (file.size / 1024 / 1024).toFixed(2) + ' MB)');
                     showUploadStatus(`✅ PDF processed! (${(file.size / 1024 / 1024).toFixed(2)} MB) 💾 Will be saved with subscription`, 'success');
                 } catch (e) {
                     console.warn('⚠️ Could not store PDF:', e);
@@ -1828,18 +1825,11 @@
             };
 
             // Attach PDF directly to subscription so it persists automatically
-            const pdfToSave = sessionStorage.getItem('currentPDFToSave');
-            if (pdfToSave) {
-                try {
-                    const pdfData = JSON.parse(pdfToSave);
-                    // Store just the base64 part (strip data URI prefix if present)
-                    newSub.pdfData = pdfData.data.includes(',') ? pdfData.data.split(',')[1] : pdfData.data;
-                    newSub.pdfName = pdfData.name;
-                    sessionStorage.removeItem('currentPDFToSave');
-                    console.log('✅ PDF attached to subscription:', pdfData.name);
-                } catch (e) {
-                    console.warn('⚠️ Could not attach PDF:', e);
-                }
+            if (pendingPDF) {
+                newSub.pdfData = pendingPDF.data.includes(',') ? pendingPDF.data.split(',')[1] : pendingPDF.data;
+                newSub.pdfName = pendingPDF.name;
+                pendingPDF = null;
+                console.log('✅ PDF attached to subscription:', newSub.pdfName);
             }
 
             subscriptions.push(newSub);
@@ -1858,6 +1848,8 @@
             document.getElementById('extractedCurrency').value = 'USD'; // Reset currency
             document.getElementById('currencyOverride').value = ''; // Reset override
             document.getElementById('currencyDisplay').style.display = 'none'; // Hide currency display
+            document.getElementById('uploadStatus').style.display = 'none';
+            pendingPDF = null;
         }
 
         function deleteSubscription(id) {
